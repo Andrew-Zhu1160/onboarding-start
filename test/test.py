@@ -353,3 +353,4 @@ async def test_pwm_duty(dut):
 
     dut._log.info("PWM Duty Cycle test completed successfully")
 
+    #run cicid now
