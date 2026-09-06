@@ -13,10 +13,9 @@ module spi_p(
 
 );
 localparam MAX_ADDRESS       = 7'd4;
-localparam   state_error=2'b11,
-            state_sample_addr = 2'b01,
-            state_sample_data = 2'b10;
-reg [1:0] current_state;
+localparam  state_sample_addr = 1'b0,
+            state_sample_data = 1'b1;
+reg  current_state;
 reg [14:0] data_stored;
 
 reg [2:0] bit_count;
@@ -25,7 +24,7 @@ reg  data_sync;
 reg  cs_sync;
 reg [1:0] sclk_sync;
 
-reg transaction_ready;
+reg transaction_ready, error;
 
 wire sclk_rising_edge = (sclk_sync == 2'b01);
 
@@ -56,7 +55,6 @@ always @(posedge clk or negedge rst_n) begin
         en_reg_pwm_7_0<=8'b0;
         en_reg_pwm_15_8<=8'b0;
         pwm_duty_cycle<=8'b0;
-        transaction_ready <= 1'b0;
     end else if (cs_sync) begin
 
         if (transaction_ready) begin
@@ -73,17 +71,18 @@ always @(posedge clk or negedge rst_n) begin
         bit_count<=3'd0;
         data_stored<=15'b0;
         transaction_ready <= 1'b0;
-    end else begin
+        error <= 1'b0;
+    end else if (sclk_rising_edge&&!error) begin
         case (current_state)
             state_sample_addr: begin
-                if(sclk_rising_edge) begin 
+                
                     data_stored <= {data_stored[13:0],data_sync};
                     if(bit_count== 3'b0 && data_sync==1'b0) begin
-                        current_state <= state_error;
+                        error <= 1'b1;
                     end else if(bit_count==3'd7) begin
                         
                         if({data_stored[5:0],data_sync}>MAX_ADDRESS) begin
-                            current_state <= state_error;
+                            error <= 1'b1;
                         end else begin
                             current_state <= state_sample_data;
                             bit_count <= 3'b0;
@@ -92,10 +91,10 @@ always @(posedge clk or negedge rst_n) begin
                         
                         bit_count <= bit_count + 3'b1;
                     end
-                end
+                
             end
             state_sample_data: begin
-                if(sclk_rising_edge) begin
+                
                     data_stored <= {data_stored[13:0],data_sync};
                     if(bit_count==3'd7) begin
                         current_state<=state_sample_addr;
@@ -104,10 +103,8 @@ always @(posedge clk or negedge rst_n) begin
                         bit_count <= bit_count + 3'd1;
                     end
                 end
-            end
-            state_error: begin
-            end
-            default:current_state<=state_sample_addr;
+            
+            default:;
         endcase
     end
 
