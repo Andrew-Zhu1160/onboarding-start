@@ -16,7 +16,7 @@ localparam MAX_ADDRESS       = 7'd4;
 localparam  state_sample_addr = 1'b0,
             state_sample_data = 1'b1;
 reg  current_state;
-reg [14:0] data_stored;
+reg [10:0] data_stored;
 
 reg [2:0] bit_count;
 
@@ -49,7 +49,7 @@ always @(posedge clk or negedge rst_n) begin
     if(!rst_n) begin
         current_state <= state_sample_addr;
         bit_count<=3'd0;
-        data_stored<=15'b0;
+        data_stored<=11'b0;
         en_reg_out_7_0<=8'b0;
         en_reg_out_15_8<=8'b0;
         en_reg_pwm_7_0<=8'b0;
@@ -58,25 +58,25 @@ always @(posedge clk or negedge rst_n) begin
     end else if (cs_sync) begin
 
         if (transaction_ready) begin
-                case (data_stored[14:8])
-                    7'd0: en_reg_out_7_0  <= data_stored[7:0];
-                    7'd1: en_reg_out_15_8 <= data_stored[7:0];
-                    7'd2: en_reg_pwm_7_0  <= data_stored[7:0];
-                    7'd3: en_reg_pwm_15_8 <= data_stored[7:0];
-                    7'd4: pwm_duty_cycle  <= data_stored[7:0];
+                case (data_stored[10:8])
+                    3'd0: en_reg_out_7_0  <= data_stored[7:0];
+                    3'd1: en_reg_out_15_8 <= data_stored[7:0];
+                    3'd2: en_reg_pwm_7_0  <= data_stored[7:0];
+                    3'd3: en_reg_pwm_15_8 <= data_stored[7:0];
+                    3'd4: pwm_duty_cycle  <= data_stored[7:0];
                     default: ;
                 endcase
         end
         current_state <= state_sample_addr;
         bit_count<=3'd0;
-        data_stored<=15'b0;
+        data_stored<=11'b0;
         transaction_ready <= 1'b0;
         error <= 1'b0;
     end else if (sclk_rising_edge&&!error) begin
         case (current_state)
             state_sample_addr: begin
                 
-                    data_stored <= {data_stored[13:0],data_sync};
+                    data_stored <= {data_stored[9:0],data_sync};
                     if(bit_count== 3'b0 && data_sync==1'b0) begin
                         error <= 1'b1;
                     end else if(bit_count==3'd7) begin
@@ -95,7 +95,7 @@ always @(posedge clk or negedge rst_n) begin
             end
             state_sample_data: begin
                 
-                    data_stored <= {data_stored[13:0],data_sync};
+                    data_stored <= {data_stored[9:0],data_sync};
                     if(bit_count==3'd7) begin
                         current_state<=state_sample_addr;
                         transaction_ready<=1'b1;
