@@ -17,7 +17,7 @@ localparam   state_error=2'b11,
             state_sample_addr = 2'b01,
             state_sample_data = 2'b10;
 reg [1:0] current_state;
-reg [15:0] data_stored;
+reg [14:0] data_stored;
 
 reg [3:0] bit_count;
 
@@ -51,7 +51,7 @@ always @(posedge clk or negedge rst_n) begin
     if(!rst_n) begin
         current_state <= state_sample_addr;
         bit_count<=4'd0;
-        data_stored<=16'b0;
+        data_stored<=15'b0;
         en_reg_out_7_0<=8'b0;
         en_reg_out_15_8<=8'b0;
         en_reg_pwm_7_0<=8'b0;
@@ -72,14 +72,14 @@ always @(posedge clk or negedge rst_n) begin
         end
         current_state <= state_sample_addr;
         bit_count<=4'd0;
-        data_stored<=16'b0;
+        data_stored<=15'b0;
         transaction_ready <= 1'b0;
     end else begin
         case (current_state)
             state_sample_addr: begin
                 if(sclk_rising_edge) begin 
-                    data_stored <= {data_stored[14:0],sync_data};
-                    if(bit_count== 4'b1 && data_stored[0]==1'b0) begin
+                    data_stored <= {data_stored[13:0],sync_data};
+                    if(bit_count== 4'b0 && sync_data==1'b0) begin
                         current_state <= state_error;
                     end else if(bit_count==4'd7) begin
                         
@@ -97,7 +97,7 @@ always @(posedge clk or negedge rst_n) begin
             end
             state_sample_data: begin
                 if(sclk_rising_edge) begin
-                    data_stored <= {data_stored[14:0],sync_data};
+                    data_stored <= {data_stored[13:0],sync_data};
                     if(bit_count==4'd15) begin
                         current_state<=state_sample_addr;
                         transaction_ready<=1'b1;

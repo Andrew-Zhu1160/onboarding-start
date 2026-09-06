@@ -20,7 +20,7 @@ module tt_um_uwasic_onboarding_Andrew_Zhu (
 wire [7:0] en_reg_out_7_0, en_reg_out_15_8;
 wire [7:0] en_reg_pwm_7_0, en_reg_pwm_15_8;
 wire [7:0] pwm_duty_cycle;
-wire [15:0] pwm_out;
+
 
 
   spi_p spi_inst (
