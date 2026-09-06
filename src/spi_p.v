@@ -21,25 +21,24 @@ reg [14:0] data_stored;
 
 reg [2:0] bit_count;
 
-reg [1:0] data_sync;
-reg [1:0] cs_sync;
+reg  data_sync;
+reg  cs_sync;
 reg [1:0] sclk_sync;
 
 reg transaction_ready;
 
 wire sclk_rising_edge = (sclk_sync == 2'b01);
-wire sync_cs          = cs_sync[1];
-wire sync_data        = data_sync[1];
+
 
 
 always @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
-        data_sync <= 2'b0;
-        cs_sync   <= 2'b11; // Active low CS defaults HIGH
+        data_sync <= 1'b0;
+        cs_sync   <= 1'b1; // Active low CS defaults HIGH
         sclk_sync <= 2'b0;
     end else begin
-        data_sync <= {data_sync[0], data};
-        cs_sync   <= {cs_sync[0], lowSelect};
+        data_sync <=  data;
+        cs_sync   <= lowSelect;
         sclk_sync <= {sclk_sync[0], sclk};
     end
 
@@ -58,7 +57,7 @@ always @(posedge clk or negedge rst_n) begin
         en_reg_pwm_15_8<=8'b0;
         pwm_duty_cycle<=8'b0;
         transaction_ready <= 1'b0;
-    end else if (sync_cs) begin
+    end else if (cs_sync) begin
 
         if (transaction_ready) begin
                 case (data_stored[14:8])
@@ -78,12 +77,12 @@ always @(posedge clk or negedge rst_n) begin
         case (current_state)
             state_sample_addr: begin
                 if(sclk_rising_edge) begin 
-                    data_stored <= {data_stored[13:0],sync_data};
-                    if(bit_count== 3'b0 && sync_data==1'b0) begin
+                    data_stored <= {data_stored[13:0],data_sync};
+                    if(bit_count== 3'b0 && data_sync==1'b0) begin
                         current_state <= state_error;
                     end else if(bit_count==3'd7) begin
                         
-                        if({data_stored[5:0],sync_data}>MAX_ADDRESS) begin
+                        if({data_stored[5:0],data_sync}>MAX_ADDRESS) begin
                             current_state <= state_error;
                         end else begin
                             current_state <= state_sample_data;
@@ -97,7 +96,7 @@ always @(posedge clk or negedge rst_n) begin
             end
             state_sample_data: begin
                 if(sclk_rising_edge) begin
-                    data_stored <= {data_stored[13:0],sync_data};
+                    data_stored <= {data_stored[13:0],data_sync};
                     if(bit_count==3'd7) begin
                         current_state<=state_sample_addr;
                         transaction_ready<=1'b1;
